@@ -36,21 +36,43 @@ resource "aws_autoscaling_group" "autoscaling_group" {
 
   protect_from_scale_in = var.protect_from_scale_in
 
-  tags = flatten(
-    [
-      {
-        key                 = "Name"
-        value               = var.cluster_name
-        propagate_at_launch = true
-      },
-      {
-        key                 = var.cluster_tag_key
-        value               = var.cluster_tag_value
-        propagate_at_launch = true
-      },
-      var.tags,
-    ]
-  )
+  # tags = flatten(
+  #   [
+  #     {
+  #       key                 = "Name"
+  #       value               = var.cluster_name
+  #       propagate_at_launch = true
+  #     },
+  #     {
+  #       key                 = var.cluster_tag_key
+  #       value               = var.cluster_tag_value
+  #       propagate_at_launch = true
+  #     },
+  #     var.tags,
+  #   ]
+  # )
+  dynamic "tag" {
+    for_each = flatten(
+      [
+        {
+          key                 = "Name"
+          value               = var.cluster_name
+          propagate_at_launch = true
+        },
+        {
+          key                 = var.cluster_tag_key
+          value               = var.cluster_tag_value
+          propagate_at_launch = true
+        },
+        var.tags,
+      ]
+    )
+    content {
+      key                 = tag.value.key
+      propagate_at_launch = tag.value.propagate_at_launch
+      value               = tag.value.value
+    }
+  }
 
   dynamic "initial_lifecycle_hook" {
     for_each = var.lifecycle_hooks
